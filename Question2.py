@@ -29,6 +29,7 @@ def new_maximum_likelihood_estimator(f,k=0.5):
     return emission_x_given_y, ycount
 
 import time
+from pyreadline.py3k_compat import execfile
 
 def getmaxy(get_e_y_x):
     maxy=0
@@ -59,8 +60,15 @@ def finaloutput(testinput, max_y_from_x, language):
             f.write("\n")
     f.close()
 
+from Eval.evalResult import get_observed, get_predicted,compare_observed_to_predicted
+
 #main function
 for language in ["EN","CN","SG"]:
     test_input = dev_in(language)
     best_states = getmaxy(new_maximum_likelihood_estimator(training_set(language))[0])
     finaloutput(test_input,best_states, language)
+    output = open(language+ "/dev.p2.out", encoding="utf-8")
+
+    #results
+    print("\n#results for " + language)
+    compare_observed_to_predicted(get_observed(dev_out(language)),get_predicted(output))
