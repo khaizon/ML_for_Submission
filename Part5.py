@@ -2,19 +2,19 @@ import numpy as np
 import unicodedata
 import sys
 ############################# initialize parameter ####################################
-dic = {'PRESTART':0, 'START':1, 'B-NP' : 2 , 'I-NP' :3, 'B-VP':4, 'B-ADVP':5, 'B-ADJP':6, 'I-ADJP':7, 'B-PP':8, 'O':9, 'B-SBAR':10, 'I-VP':11, 'I-ADVP':12, 'B-PRT':13, 'I-PP':14, 'B-CONJP':15, 'I-CONJP':16, 'B-INTJ':17, 'I-INTJ':18, 'I-SBAR':19, 'B-UCP':20, 'I-UCP':21, 'B-LST':22, 'STOP':23, 'POSTSTOP':24}
-l = ['PRESTART','START', 'B-NP', 'I-NP', 'B-VP', 'B-ADVP', 'B-ADJP', 'I-ADJP', 'B-PP', 'O', 'B-SBAR', 'I-VP', 'I-ADVP', 'B-PRT', 'I-PP', 'B-CONJP', 'I-CONJP', 'B-INTJ', 'I-INTJ', 'I-SBAR', 'B-UCP', 'I-UCP', 'B-LST', 'STOP', 'POSTSTOP']
+possible_states = {'PRESTART':0, 'START':1, 'B-NP' : 2 , 'I-NP' :3, 'B-VP':4, 'B-ADVP':5, 'B-ADJP':6, 'I-ADJP':7, 'B-PP':8, 'O':9, 'B-SBAR':10, 'I-VP':11, 'I-ADVP':12, 'B-PRT':13, 'I-PP':14, 'B-CONJP':15, 'I-CONJP':16, 'B-INTJ':17, 'I-INTJ':18, 'I-SBAR':19, 'B-UCP':20, 'I-UCP':21, 'B-LST':22, 'STOP':23, 'POSTSTOP':24}
+list_of_states = ['PRESTART','START', 'B-NP', 'I-NP', 'B-VP', 'B-ADVP', 'B-ADJP', 'I-ADJP', 'B-PP', 'O', 'B-SBAR', 'I-VP', 'I-ADVP', 'B-PRT', 'I-PP', 'B-CONJP', 'I-CONJP', 'B-INTJ', 'I-INTJ', 'I-SBAR', 'B-UCP', 'I-UCP', 'B-LST', 'STOP', 'POSTSTOP']
 
-emission_parameter = ({}, {}, {}, {}, {}, {}, {}, {},{}, {}, {}, {}, {}, {}, {}, {},{}, {}, {}, {}, {}, {}, {})  ## 1st,2nd dict empty
+emission_parameter = ({}, {}, {}, {}, {}, {}, {}, {},{}, {}, {}, {}, {}, {}, {}, {},{}, {}, {}, {}, {}, {}, {})  ## 1st,2nd possible_statest empty
 observation_space = set()
 
-a = 25
-transmission_parameter = np.zeros((25, 25, 25))
+states = 25
+transmission_parameter = np.zeros((states, states, states))
 
 b_inSpace = 0.1
 b_notInSpace = 1
 
-T = 15
+iterations = 15
 
 
 def forward(preScore, x):
@@ -83,12 +83,13 @@ def viterbiAlgo(X):
 
     for i in range(2, n):
         score = forward(layers[i], X[i])
+        layers.append(score)
 
     temp_score = []
     for j in range(2, 23):
         for k in range(2,23):
 
-            kj_score = layers[n][j-2][0] + (transmission_parameter[k][j][dic['STOP']])
+            kj_score = layers[n][j-2][0] + (transmission_parameter[k][j][possible_states['STOP']])
             temp_score.append(kj_score)
     max_value = max(temp_score)
     max_index = temp_score.index(max_value) / 21
@@ -98,31 +99,31 @@ def viterbiAlgo(X):
     for i in range(n + 1, 1, -1):
         parent = int(layers[i][parent-2][1])
         
-        Y.insert(0, l[parent])
+        Y.insert(0, list_of_states[parent])
     return Y
 
 
 def updateParam(XGOLD, YGOLD, Ytrain): 
     for i in range(2, len(YGOLD)):
-        transmission_parameter[dic[YGOLD[i - 2]]][dic[YGOLD[i - 1]]][dic[YGOLD[i]]] += 1                     #UPDATES 
-        transmission_parameter[dic[Ytrain[i - 2]]][dic[Ytrain[i - 1]]][dic[Ytrain[i]]] -= 1
+        transmission_parameter[possible_states[YGOLD[i - 2]]][possible_states[YGOLD[i - 1]]][possible_states[YGOLD[i]]] += 1                     #UPDATES 
+        transmission_parameter[possible_states[Ytrain[i - 2]]][possible_states[Ytrain[i - 1]]][possible_states[Ytrain[i]]] -= 1
 
     for i in range(2, len(YGOLD) - 2):
-        if (XGOLD[i - 2] in emission_parameter[dic[YGOLD[i]]]): #IF observationervation in emission_parameter[dic[ygold[i]]]
-            emission_parameter[dic[YGOLD[i]]][XGOLD[i - 2]] += 1
-        elif (XGOLD[i - 2] in observation_space): #IF observationervation in emission_parameter[dic[ygold[i]]] but in observationervation space
-            emission_parameter[dic[YGOLD[i]]][XGOLD[i - 2]] = 1
+        if (XGOLD[i - 2] in emission_parameter[possible_states[YGOLD[i]]]): #IF observationervation in emission_parameter[possible_states[ygold[i]]]
+            emission_parameter[possible_states[YGOLD[i]]][XGOLD[i - 2]] += 1
+        elif (XGOLD[i - 2] in observation_space): #IF observationervation in emission_parameter[possible_states[ygold[i]]] but in observationervation space
+            emission_parameter[possible_states[YGOLD[i]]][XGOLD[i - 2]] = 1
         else:
-            emission_parameter[dic[YGOLD[i]]][XGOLD[i - 2]] = 1
+            emission_parameter[possible_states[YGOLD[i]]][XGOLD[i - 2]] = 1
             observation_space.add(XGOLD[i - 2])
 
     for i in range(2, len(YGOLD) - 2):
-        if (XGOLD[i - 2] in emission_parameter[dic[Ytrain[i]]]):
-            emission_parameter[dic[Ytrain[i]]][XGOLD[i - 2]] -= 1
+        if (XGOLD[i - 2] in emission_parameter[possible_states[Ytrain[i]]]):
+            emission_parameter[possible_states[Ytrain[i]]][XGOLD[i - 2]] -= 1
         elif (XGOLD[i - 2] in observation_space):
-            emission_parameter[dic[Ytrain[i]]][XGOLD[i - 2]] = -1
+            emission_parameter[possible_states[Ytrain[i]]][XGOLD[i - 2]] = -1
         else:
-            emission_parameter[dic[Ytrain[i]]][XGOLD[i - 2]] = -1
+            emission_parameter[possible_states[Ytrain[i]]][XGOLD[i - 2]] = -1
             observation_space.add(XGOLD[i - 2])
 
 
@@ -130,7 +131,7 @@ def updateParam(XGOLD, YGOLD, Ytrain):
 def train(language):
 
     """T number of iterations"""
-    for trainStep in range(T):  
+    for trainStep in range(iterations):  
         print ('Iteration: ', trainStep)
 
         train_file = open(language+'/train', 'r', encoding='utf-8')
