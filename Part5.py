@@ -7,13 +7,13 @@ l = ['PRESTART','START', 'B-NP', 'I-NP', 'B-VP', 'B-ADVP', 'B-ADJP', 'I-ADJP', '
 
 # store emission parameters
 # data structure: tuple + dictionary
-e_param = ({}, {}, {}, {}, {}, {}, {}, {},{}, {}, {}, {}, {}, {}, {}, {},{}, {}, {}, {}, {}, {}, {})  ## 1st,2nd dict empty
-obs_space = set()
+emission_parameter = ({}, {}, {}, {}, {}, {}, {}, {},{}, {}, {}, {}, {}, {}, {}, {},{}, {}, {}, {}, {}, {}, {})  ## 1st,2nd dict empty
+observation_space = set()
 
 # store transition parameters
 # initialize as a 11*11*11 matrix of zeros
 a = 25
-t_param = np.zeros((25, 25, 25))
+transmission_parameter = np.zeros((25, 25, 25))
 
 # b_inSpace = float(sys.argv[1])
 # b_notInSpace = float(sys.argv[2])  # 1/count+1
@@ -37,16 +37,16 @@ def forward(preScore, x):
     for i in range(2, 23):  # i: 2~8
         temp_score = []
         # calculate emission first
-        if ((x in obs_space) & (x in e_param[i])):
-            b = e_param[i][x]
-        elif (x in obs_space):
+        if ((x in observation_space) & (x in emission_parameter[i])):
+            b = emission_parameter[i][x]
+        elif (x in observation_space):
             b = b_inSpace                                       # !!!!!!!!!!!!!!!!!!!!!!!!!!
         else:
             b = b_notInSpace
         for j in range(2, 23):  #
             # score = preScore*a*b
             for k in range(2, 23):
-                kj_score = preScore[j - 2][0] + t_param[k][j][i] + b  # trans 2~8 -> 2-8
+                kj_score = preScore[j - 2][0] + transmission_parameter[k][j][i] + b  # trans 2~8 -> 2-8
                 temp_score.append(kj_score)
         max_value = max(temp_score)
         max_index = temp_score.index(max_value) / 21
@@ -63,14 +63,14 @@ def viterbiAlgo(X):
     # prestart, start -> 1
     x = X[0]
     for j in range(2, 23): # 2-8
-        if ((x in obs_space) & (x in e_param[j])):
-            b = e_param[j][x]
-        elif (x in obs_space):
+        if ((x in observation_space) & (x in emission_parameter[j])):
+            b = emission_parameter[j][x]
+        elif (x in observation_space):
             b = b_inSpace                                                        # to be tuned
         else:
             b = b_notInSpace
-        prob = t_param[0][1][j] + b   # prestart * start * y1
-        prev_layer.append((prob, 1))  # (prob, PRESTART, START)            ????
+        probability = transmission_parameter[0][1][j] + b   # prestart * start * y1
+        prev_layer.append((probability, 1))  # (probability, PRESTART, START)            ????
     layers = [[(1, -1)], prev_layer]
 
 
@@ -80,14 +80,14 @@ def viterbiAlgo(X):
         layer = []
         for j in range(2, 23): # 2-8
             temp_score = []
-            if ((x in obs_space) & (x in e_param[j])):
-                b = e_param[j][x]
-            elif (x in obs_space):
+            if ((x in observation_space) & (x in emission_parameter[j])):
+                b = emission_parameter[j][x]
+            elif (x in observation_space):
                 b = b_inSpace                                                           # to be tuned
             else:
                 b = b_notInSpace
             for k in range(2,23):
-                temp_score.append(t_param[1][k][j] + b)   #  start + y1 + y2
+                temp_score.append(transmission_parameter[1][k][j] + b)   #  start + y1 + y2
             max_value = max(temp_score)
             max_index = temp_score.index(max_value)
             layer.append((max_value, max_index + 2))
@@ -106,7 +106,7 @@ def viterbiAlgo(X):
     for j in range(2, 23):
         for k in range(2,23):
             # score = preScore*a
-            kj_score = layers[n][j-2][0] + (t_param[k][j][dic['STOP']])
+            kj_score = layers[n][j-2][0] + (transmission_parameter[k][j][dic['STOP']])
             temp_score.append(kj_score)
     max_value = max(temp_score)
     max_index = temp_score.index(max_value) / 21
@@ -125,26 +125,26 @@ def viterbiAlgo(X):
 
 def updateParam(XGOLD, YGOLD, Ytrain): 
     for i in range(2, len(YGOLD)):
-        t_param[dic[YGOLD[i - 2]]][dic[YGOLD[i - 1]]][dic[YGOLD[i]]] += 1                     #UPDATES 
-        t_param[dic[Ytrain[i - 2]]][dic[Ytrain[i - 1]]][dic[Ytrain[i]]] -= 1
+        transmission_parameter[dic[YGOLD[i - 2]]][dic[YGOLD[i - 1]]][dic[YGOLD[i]]] += 1                     #UPDATES 
+        transmission_parameter[dic[Ytrain[i - 2]]][dic[Ytrain[i - 1]]][dic[Ytrain[i]]] -= 1
 
     for i in range(2, len(YGOLD) - 2):
-        if (XGOLD[i - 2] in e_param[dic[YGOLD[i]]]): #IF observation in e_param[dic[ygold[i]]]
-            e_param[dic[YGOLD[i]]][XGOLD[i - 2]] += 1
-        elif (XGOLD[i - 2] in obs_space): #IF observation in e_param[dic[ygold[i]]] but in observation space
-            e_param[dic[YGOLD[i]]][XGOLD[i - 2]] = 1
+        if (XGOLD[i - 2] in emission_parameter[dic[YGOLD[i]]]): #IF observationervation in emission_parameter[dic[ygold[i]]]
+            emission_parameter[dic[YGOLD[i]]][XGOLD[i - 2]] += 1
+        elif (XGOLD[i - 2] in observation_space): #IF observationervation in emission_parameter[dic[ygold[i]]] but in observationervation space
+            emission_parameter[dic[YGOLD[i]]][XGOLD[i - 2]] = 1
         else:
-            e_param[dic[YGOLD[i]]][XGOLD[i - 2]] = 1
-            obs_space.add(XGOLD[i - 2])
+            emission_parameter[dic[YGOLD[i]]][XGOLD[i - 2]] = 1
+            observation_space.add(XGOLD[i - 2])
 
     for i in range(2, len(YGOLD) - 2):
-        if (XGOLD[i - 2] in e_param[dic[Ytrain[i]]]):
-            e_param[dic[Ytrain[i]]][XGOLD[i - 2]] -= 1
-        elif (XGOLD[i - 2] in obs_space):
-            e_param[dic[Ytrain[i]]][XGOLD[i - 2]] = -1
+        if (XGOLD[i - 2] in emission_parameter[dic[Ytrain[i]]]):
+            emission_parameter[dic[Ytrain[i]]][XGOLD[i - 2]] -= 1
+        elif (XGOLD[i - 2] in observation_space):
+            emission_parameter[dic[Ytrain[i]]][XGOLD[i - 2]] = -1
         else:
-            e_param[dic[Ytrain[i]]][XGOLD[i - 2]] = -1
-            obs_space.add(XGOLD[i - 2])
+            emission_parameter[dic[Ytrain[i]]][XGOLD[i - 2]] = -1
+            observation_space.add(XGOLD[i - 2])
 
 
 
@@ -158,14 +158,14 @@ def train(language):
         Ygold = ['PRESTART', 'START'] #best sequence of states so far
         X = []
 
-        for obs in train_file:
+        for observation in train_file:
             try:
-                obs, v = obs.split()
-                obs = obs.strip()
+                observation, v = observation.split()
+                observation = observation.strip()
                 
-                # obs = preprocess(obs)
+                # observation = preprocess(observation)
                 v = v.strip()
-                X.append(obs)
+                X.append(observation)
                 Ygold.append(v)
 
             except:  #will only have an exception when sentence has been extracted.

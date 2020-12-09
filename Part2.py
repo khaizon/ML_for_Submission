@@ -32,14 +32,14 @@ def new_maximum_likelihood_estimator(f,k=0.5):
 def getmaxy(get_e_y_x):
     maxy=0
     max_y_from_x = {}
-    max_x_prob = {}
+    max_x_probability = {}
     for key, item in get_e_y_x.items():
-        if key[1] not in max_x_prob:
-            max_x_prob[key[1]] =item
+        if key[1] not in max_x_probability:
+            max_x_probability[key[1]] =item
             max_y_from_x[key[1]] = key[0]
         else:
-            if max_x_prob[key[1]] < item:
-                max_x_prob[key[1]] = item
+            if max_x_probability[key[1]] < item:
+                max_x_probability[key[1]] = item
                 max_y_from_x[key[1]] = key[0]
 
     return max_y_from_x
@@ -63,12 +63,12 @@ from Eval.evalResult import get_observed, get_predicted,compare_observed_to_pred
 def transition_estimator(f):
     ycount = {"START" : 0}
     transition_y_count = {}
-    transition_prob = {}
-    prev_state = ""
+    transition_probability = {}
+    previous_state = ""
     counter = 0
     for line in f:
         
-        if prev_state == "":
+        if previous_state == "":
             if len(line.split(" ")) > 1:
                 y = line.split(" ")[1]
                 if tuple(("START", y)) in transition_y_count:
@@ -81,31 +81,31 @@ def transition_estimator(f):
                 else:
                     ycount[y] = 1
                     ycount["START"] +=1
-                prev_state = y
+                previous_state = y
 
         else:
             if len(line.split(" ")) > 1:
                 y = line.split(" ")[1] 
-                if tuple((prev_state, y)) in transition_y_count:
-                    transition_y_count[tuple((prev_state, y))] += 1
+                if tuple((previous_state, y)) in transition_y_count:
+                    transition_y_count[tuple((previous_state, y))] += 1
                 else:
-                    transition_y_count[tuple((prev_state, y))] = 1
+                    transition_y_count[tuple((previous_state, y))] = 1
                 if y in ycount:
                     ycount[y] +=1
                 else:
                     ycount[y] = 1
-                prev_state = y
+                previous_state = y
             else:
-                if tuple((prev_state, "STOP")) in transition_y_count:
-                    transition_y_count[tuple((prev_state, "STOP"))] += 1
+                if tuple((previous_state, "STOP")) in transition_y_count:
+                    transition_y_count[tuple((previous_state, "STOP"))] += 1
                 else:
-                    transition_y_count[tuple((prev_state, "STOP"))] = 1
+                    transition_y_count[tuple((previous_state, "STOP"))] = 1
                 
 
-                prev_state = ""
+                previous_state = ""
         
     for key in transition_y_count.keys():
-        transition_prob[key] = transition_y_count[key]/ycount[key[0]]
+        transition_probability[key] = transition_y_count[key]/ycount[key[0]]
     return ycount
 
 def train(language):
@@ -114,8 +114,8 @@ def train(language):
 
     states =  list(ycount.keys())
     states.append("STOP")
-    e_count = tuple([{} for i in range(len(states))])
-    t_param = [[0]*(len(states)+1) for i in range(len(states))]
+    emission_counter = tuple([{} for i in range(len(states))])
+    transmission_parameter = [[0]*(len(states)+1) for i in range(len(states))]
     counter = 0
     dic = {}
     for state in states:
@@ -124,36 +124,36 @@ def train(language):
     dic["STOP"] = counter 
     print(dic)
     u = 'START'
-    obs_space = set()
+    observation_space = set()
 
-    for obs in FILE:
+    for observation in FILE:
         try:
-            obs, v = obs.split() #obs , state
-            obs = obs.strip()
+            observation, v = observation.split() #observation , state
+            observation = observation.strip()
             v = v.strip()
             if type == "EN":
                 position = dic[v]  ## position: 1~7
             else:
                 position = dic[v]
-            # update e_count
-            if (obs in e_count[position]):
-                e_count[position][obs] += 1
+            # update emission_counter
+            if (observation in emission_counter[position]):
+                emission_counter[position][observation] += 1
             else:
-                e_count[position][obs] = 1
+                emission_counter[position][observation] = 1
 
-            # update t_param
+            # update transmission_parameter
             pre_position = dic[u]
-            t_param[pre_position][position] += 1
+            transmission_parameter[pre_position][position] += 1
             u = v
-            # add into train_obs_set
-            if obs not in obs_space:
-                obs_space.add(obs)
+            # add into train_observation_set
+            if observation not in observation_space:
+                observation_space.add(observation)
         except:
             pre_position = dic[u]
-            t_param[pre_position][8] += 1
+            transmission_parameter[pre_position][8] += 1
             u = 'START'
 
-    return obs_space
+    return observation_space
 
 print(len(train("EN")))
 
