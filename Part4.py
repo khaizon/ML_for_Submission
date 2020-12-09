@@ -99,7 +99,6 @@ def train(language):
         dic[state] = counter
         counter +=1
     dic["STOP"] = counter 
-    print(dic)
     u = 'START'
     obs_space = set()
     count = [0] * (len(states)-1)
@@ -139,7 +138,6 @@ def train(language):
     for i in range(0, len(states)-1):
         for j in range(0, len(states)-1):
             t_param[i][j] = 1.0 * t_param[i][j] / count[i]
-    # print (t_param)
 
     # building emission params table: a list of 8 dicentraints, each dicentraint has all obs as keys,
     # value is 0 if obs never appears for this state
@@ -366,16 +364,21 @@ def runPart4(language,obs_space, e_param, t_param, count, k):
 
 from Eval.evalResult import get_observed, get_predicted,compare_observed_to_predicted
 
+#insert part here!
+part = 3
+
 for language in ["EN"]:
 # for language in ["EN"]:
     print ("Doing " + language)
     obs_space, e_param, t_param, count = train(language)
     # runPart2(language,obs_space, e_param, count)
-    runPart4(language,obs_space, e_param, t_param, count, 3)
+    if part == 3:
+        runPart3(language,obs_space, e_param, t_param, count)
+        output = open(language+ "/dev.p4.out", encoding="utf-8")
+    else:
+        runPart4(language,obs_space, e_param, t_param, count, 3)
+        output = open(language+ "/dev.p3.out", encoding="utf-8")
 
-
-
-    output = open(language+ "/dev.p4.out", encoding="utf-8")
 
     #results
     print("\n#results for " + language)
