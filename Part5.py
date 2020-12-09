@@ -171,7 +171,7 @@ def perception_algo(language):
             Sentence = []
         else:
 
-            X.append(line)
+            Sentence.append(line)
 
 
 for language in ['EN']:
