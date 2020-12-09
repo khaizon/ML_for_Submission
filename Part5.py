@@ -1,18 +1,16 @@
 import numpy as np
 import unicodedata
 import sys
+from data_sets import challenge_set
 ############################# initialize parameter ####################################
-possible_states = {'PRESTART':0, 'START':1, 'B-NP' : 2 , 'I-NP' :3, 'B-VP':4, 'B-ADVP':5, 'B-ADJP':6, 'I-ADJP':7, 'B-PP':8, 'O':9, 'B-SBAR':10, 'I-VP':11, 'I-ADVP':12, 'B-PRT':13, 'I-PP':14, 'B-CONJP':15, 'I-CONJP':16, 'B-INTJ':17, 'I-INTJ':18, 'I-SBAR':19, 'B-UCP':20, 'I-UCP':21, 'B-LST':22, 'STOP':23, 'POSTSTOP':24}
-list_of_states = ['PRESTART','START', 'B-NP', 'I-NP', 'B-VP', 'B-ADVP', 'B-ADJP', 'I-ADJP', 'B-PP', 'O', 'B-SBAR', 'I-VP', 'I-ADVP', 'B-PRT', 'I-PP', 'B-CONJP', 'I-CONJP', 'B-INTJ', 'I-INTJ', 'I-SBAR', 'B-UCP', 'I-UCP', 'B-LST', 'STOP', 'POSTSTOP']
+possible_states = {'START1':0, 'START2':1, 'B-NP' : 2 , 'I-NP' :3, 'B-VP':4, 'B-ADVP':5, 'B-ADJP':6, 'I-ADJP':7, 'B-PP':8, 'O':9, 'B-SBAR':10, 'I-VP':11, 'I-ADVP':12, 'B-PRT':13, 'I-PP':14, 'B-CONJP':15, 'I-CONJP':16, 'B-INTJ':17, 'I-INTJ':18, 'I-SBAR':19, 'B-UCP':20, 'I-UCP':21, 'B-LST':22, 'STOP1':23, 'STOP2':24}
+list_of_states = ['START1','START2', 'B-NP', 'I-NP', 'B-VP', 'B-ADVP', 'B-ADJP', 'I-ADJP', 'B-PP', 'O', 'B-SBAR', 'I-VP', 'I-ADVP', 'B-PRT', 'I-PP', 'B-CONJP', 'I-CONJP', 'B-INTJ', 'I-INTJ', 'I-SBAR', 'B-UCP', 'I-UCP', 'B-LST', 'STOP1', 'STOP2']
 
 emission_parameter = ({}, {}, {}, {}, {}, {}, {}, {},{}, {}, {}, {}, {}, {}, {}, {},{}, {}, {}, {}, {}, {}, {})  ## 1st,2nd possible_statest empty
 observation_space = set()
 
 states = 25
 transmission_parameter = np.zeros((states, states, states))
-
-b_inSpace = 0.1
-b_notInSpace = 1
 
 iterations = 15
 
@@ -26,9 +24,9 @@ def forward(preScore, x):
         if ((x in observation_space) & (x in emission_parameter[i])):
             b = emission_parameter[i][x]
         elif (x in observation_space):
-            b = b_inSpace   
+            b = 0.1   
         else:
-            b = b_notInSpace
+            b = 1
         for j in range(2, 23):  #
             # score = preScore*a*b
             for k in range(2, 23):
@@ -52,9 +50,9 @@ def viterbiAlgo(X):
         if ((x in observation_space) & (x in emission_parameter[j])):
             b = emission_parameter[j][x]
         elif (x in observation_space):
-            b = b_inSpace                                                       
+            b = 0.1                                                       
         else:
-            b = b_notInSpace
+            b = 1
         probability = transmission_parameter[0][1][j] + b
         prev_layer.append((probability, 1))
     layers = [[(1, -1)], prev_layer]
@@ -69,11 +67,11 @@ def viterbiAlgo(X):
             if ((x in observation_space) & (x in emission_parameter[j])):
                 b = emission_parameter[j][x]
             elif (x in observation_space):
-                b = b_inSpace                                                           # to be tuned
+                b = 0.1                                                          
             else:
-                b = b_notInSpace
+                b = 1
             for k in range(2,23):
-                temp_score.append(transmission_parameter[1][k][j] + b)   #  start + y1 + y2
+                temp_score.append(transmission_parameter[1][k][j] + b)  
             max_value = max(temp_score)
             max_index = temp_score.index(max_value)
             layer.append((max_value, max_index + 2))
@@ -89,7 +87,7 @@ def viterbiAlgo(X):
     for j in range(2, 23):
         for k in range(2,23):
 
-            kj_score = layers[n][j-2][0] + (transmission_parameter[k][j][possible_states['STOP']])
+            kj_score = layers[n][j-2][0] + (transmission_parameter[k][j][possible_states['STOP1']])
             temp_score.append(kj_score)
     max_value = max(temp_score)
     max_index = temp_score.index(max_value) / 21
@@ -130,54 +128,52 @@ def updateParam(XGOLD, YGOLD, Ytrain):
 
 def train(language):
 
-    """T number of iterations"""
-    for trainStep in range(iterations):  
-        print ('Iteration: ', trainStep)
+    for iteration in range(iterations):  
+        print ('Iteration: ', iteration)
 
-        train_file = open(language+'/train', 'r', encoding='utf-8')
-        Ygold = ['PRESTART', 'START']
-        X = []
+        training_set = open(language+'/train', 'r', encoding='utf-8')
+        Ygold = ['START1', 'START2']
+        Sentence = []
 
-        for observation in train_file:
+        for observation in training_set:
             try:
-                observation, v = observation.split()
+                observation, state_label = observation.split()
                 observation = observation.strip()
 
-                v = v.strip()
-                X.append(observation)
-                Ygold.append(v)
+                state_label = state_label.strip()
+                Sentence.append(observation)
+                Ygold.append(state_label)
 
             except:  
-                Ygold.extend(['STOP', 'POSTSTOP'])
-                Ytrain = ['PRESTART', 'START']
-                Ytrain.extend(viterbiAlgo(X))
-                Ytrain.extend(['STOP', 'POSTSTOP'])
+                Ygold.extend(['STOP1', 'STOP2'])
+                Ytrain = ['START1', 'START2']
+                Ytrain.extend(viterbiAlgo(Sentence))
+                Ytrain.extend(['STOP1', 'STOP2'])
 
-                updateParam(X, Ygold, Ytrain) 
-
-
-                Ygold = ['PRESTART', 'START']
-                X = []
+                updateParam(Sentence, Ygold, Ytrain) 
 
 
-def runPerceptron_MAI_GEY_KIANG_LAH(language):
-    dev_file = open(language+'/dev.in', 'r', encoding='utf-8')
-    out_file = open(language+'/dev.p5.out', 'w', encoding='utf-8')
-    X = []
-    for r in dev_file:
-        r = r.strip()
-        if (r == ''):
+                Ygold = ['START1', 'START2']
+                Sentence = []
 
-            Y = viterbiAlgo(X)
-            for i in range(0, len(X)):
-                out_file.write('' + X[i] + " " + Y[i] + '\n')
+
+def perception_algo(language):
+    input_file = challenge_set("EN")
+    out_file = open(language+'/dev.test.out', 'w', encoding='utf-8')
+    Sentence = []
+    for line in input_file:
+        line = line.strip()
+        if (line == ''):
+            Y = viterbiAlgo(Sentence)
+            for i in range(0, len(Sentence)):
+                out_file.write('' + Sentence[i] + " " + Y[i] + '\n')
             out_file.write('\n')
-            X = []
+            Sentence = []
         else:
 
-            X.append(r)
+            X.append(line)
 
 
 for language in ['EN']:
     train(language)
-    runPerceptron_MAI_GEY_KIANG_LAH(language)
+    perception_algo(language)
