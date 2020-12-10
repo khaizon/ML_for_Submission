@@ -2,6 +2,7 @@ import numpy as np
 import unicodedata
 import sys
 from data_sets import challenge_set,training_set
+import time, datetime
 
 def y_counter(f):
     ycount = {"START" : 0}
@@ -50,9 +51,8 @@ observation_space = set()
 
 transmission_parameter = np.zeros((len(list_of_states), len(list_of_states), len(list_of_states)))
 
-iterations = 5
+iterations = 50
 
-print(possible_states)
 def forward(preScore, x):
 
     layer = []
@@ -168,9 +168,10 @@ def update_parameters(XGOLD, YGOLD, Ytrain):
 
 
 def train(language):
-
+    start_time = time.time()
     for iteration in range(iterations):  
-        print ('Iteration: ', iteration)
+        print ('   Iteration:  ', iteration)
+        print("Time Elapsed:  ", time.strftime("%H:%M:%S", time.gmtime(time.time()-start_time)))
 
         training_set = open(language+'/train', 'r', encoding='utf-8')
         Ygold = ['START1', 'START2']
@@ -201,6 +202,8 @@ def train(language):
 def perception_algo(language):
     input_file = challenge_set("EN")
     out_file = open(language+'/dev.test.out', 'w', encoding='utf-8')
+    input_file = training_set("EN")
+    out_file = open(language+'/dev.p5.out', 'w', encoding='utf-8')
     Sentence = []
     for line in input_file:
         line = line.strip()

@@ -292,8 +292,10 @@ def runPart4(language,observation_space, emission_parameter, transmission_parame
 from Eval.evalResult import get_observed, get_predicted,compare_observed_to_predicted
 
 #if its part 3, we set part=3 to get the results for part 3, else we set part=4 to get the 3rd best result as required.
-part = 4
+part = 3  #change to part 4 for part 4
 
+
+#simply click run
 for language in ["EN","CN","SG"]:
 
     print ("\n...Running part {} on ".format(part) + language+ "...")
