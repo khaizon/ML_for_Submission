@@ -51,7 +51,7 @@ observation_space = set()
 
 transmission_parameter = np.zeros((len(list_of_states), len(list_of_states), len(list_of_states)))
 
-iterations = 50
+iterations = 30
 
 def forward(preScore, x):
 
@@ -197,6 +197,10 @@ def train(language):
 
                 Ygold = ['START1', 'START2']
                 Sentence = []
+    t_params = open(language+'/dev.p5.t_param', 'w', encoding='utf-8')
+    t_params.write(str(transmission_parameter))
+    e_params = open(language+'/dev.p5.e_param', 'w', encoding='utf-8')
+    e_params.write(str(emission_parameter))
 
 
 def perception_algo(language):
