@@ -1,7 +1,7 @@
 import numpy as np
 import unicodedata
 import sys
-from data_sets import challenge_set,training_set
+from data_sets import challenge_set,training_set,dev_in
 import time, datetime
 
 def y_counter(f):
@@ -206,7 +206,7 @@ def train(language):
 def perception_algo(language):
     input_file = challenge_set("EN")
     out_file = open(language+'/dev.test.out', 'w', encoding='utf-8')
-    input_file = training_set("EN")
+    input_file = dev_in("EN")
     out_file = open(language+'/dev.p5.out', 'w', encoding='utf-8')
     Sentence = []
     for line in input_file:
