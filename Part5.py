@@ -12,7 +12,7 @@ observation_space = set()
 states = 25
 transmission_parameter = np.zeros((states, states, states))
 
-iterations = 15
+iterations = 5
 
 
 def forward(preScore, x):
@@ -101,7 +101,7 @@ def viterbiAlgo(X):
     return Y
 
 
-def updateParam(XGOLD, YGOLD, Ytrain): 
+def update_parameters(XGOLD, YGOLD, Ytrain): 
     for i in range(2, len(YGOLD)):
         transmission_parameter[possible_states[YGOLD[i - 2]]][possible_states[YGOLD[i - 1]]][possible_states[YGOLD[i]]] += 1                     #UPDATES 
         transmission_parameter[possible_states[Ytrain[i - 2]]][possible_states[Ytrain[i - 1]]][possible_states[Ytrain[i]]] -= 1
@@ -150,7 +150,7 @@ def train(language):
                 Ytrain.extend(viterbiAlgo(Sentence))
                 Ytrain.extend(['STOP1', 'STOP2'])
 
-                updateParam(Sentence, Ygold, Ytrain) 
+                update_parameters(Sentence, Ygold, Ytrain) 
 
 
                 Ygold = ['START1', 'START2']
