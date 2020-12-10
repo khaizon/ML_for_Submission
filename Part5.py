@@ -1,20 +1,58 @@
 import numpy as np
 import unicodedata
 import sys
-from data_sets import challenge_set
-############################# initialize parameter ####################################
-possible_states = {'START1':0, 'START2':1, 'B-NP' : 2 , 'I-NP' :3, 'B-VP':4, 'B-ADVP':5, 'B-ADJP':6, 'I-ADJP':7, 'B-PP':8, 'O':9, 'B-SBAR':10, 'I-VP':11, 'I-ADVP':12, 'B-PRT':13, 'I-PP':14, 'B-CONJP':15, 'I-CONJP':16, 'B-INTJ':17, 'I-INTJ':18, 'I-SBAR':19, 'B-UCP':20, 'I-UCP':21, 'B-LST':22, 'STOP1':23, 'STOP2':24}
-list_of_states = ['START1','START2', 'B-NP', 'I-NP', 'B-VP', 'B-ADVP', 'B-ADJP', 'I-ADJP', 'B-PP', 'O', 'B-SBAR', 'I-VP', 'I-ADVP', 'B-PRT', 'I-PP', 'B-CONJP', 'I-CONJP', 'B-INTJ', 'I-INTJ', 'I-SBAR', 'B-UCP', 'I-UCP', 'B-LST', 'STOP1', 'STOP2']
+from data_sets import challenge_set,training_set
 
-emission_parameter = ({}, {}, {}, {}, {}, {}, {}, {},{}, {}, {}, {}, {}, {}, {}, {},{}, {}, {}, {}, {}, {}, {})  ## 1st,2nd possible_statest empty
+def y_counter(f):
+    ycount = {"START" : 0}
+    previous_state = ""
+    counter = 0
+    for line in f:
+        
+        if previous_state == "":
+            if len(line.split(" ")) > 1:
+                y = line.split(" ")[1]
+                if y in ycount:
+                    ycount[y] +=1
+                    ycount["START"] +=1
+                else:
+                    ycount[y] = 1
+                    ycount["START"] +=1
+                previous_state = y
+
+        else:
+            if len(line.split(" ")) > 1:
+                y = line.split(" ")[1] 
+                if y in ycount:
+                    ycount[y] +=1
+                else:
+                    ycount[y] = 1
+                previous_state = y
+    return ycount
+
+ycount = y_counter(training_set("EN"))
+
+############################# initializing parameters ####################################
+list_of_states = list(ycount.keys())
+list_of_states.insert(0,'START1')
+list_of_states[1] = 'START2'
+list_of_states.append('STOP1')
+list_of_states.append('STOP2')
+
+possible_states = {}
+counter = 0
+for state in list_of_states:
+    possible_states[state] = counter
+    counter +=1
+
+emission_parameter = tuple([{} for i in range(len(list_of_states)-2)])
 observation_space = set()
 
-states = 25
-transmission_parameter = np.zeros((states, states, states))
+transmission_parameter = np.zeros((len(list_of_states), len(list_of_states), len(list_of_states)))
 
 iterations = 5
 
-
+print(possible_states)
 def forward(preScore, x):
 
     layer = []
@@ -102,19 +140,20 @@ def viterbiAlgo(X):
 
 
 def update_parameters(XGOLD, YGOLD, Ytrain): 
-    for i in range(2, len(YGOLD)):
-        transmission_parameter[possible_states[YGOLD[i - 2]]][possible_states[YGOLD[i - 1]]][possible_states[YGOLD[i]]] += 1                     #UPDATES 
-        transmission_parameter[possible_states[Ytrain[i - 2]]][possible_states[Ytrain[i - 1]]][possible_states[Ytrain[i]]] -= 1
+    # concept: make transitions and emissions observed in trainingset more likely
+    # while making transitions and emissions observed in viterbi output less likely
 
+    # this first for loop is for emission parameters
     for i in range(2, len(YGOLD) - 2):
-        if (XGOLD[i - 2] in emission_parameter[possible_states[YGOLD[i]]]): #IF observationervation in emission_parameter[possible_states[ygold[i]]]
+        if (XGOLD[i - 2] in emission_parameter[possible_states[YGOLD[i]]]): 
             emission_parameter[possible_states[YGOLD[i]]][XGOLD[i - 2]] += 1
-        elif (XGOLD[i - 2] in observation_space): #IF observationervation in emission_parameter[possible_states[ygold[i]]] but in observationervation space
+        elif (XGOLD[i - 2] in observation_space): 
             emission_parameter[possible_states[YGOLD[i]]][XGOLD[i - 2]] = 1
         else:
             emission_parameter[possible_states[YGOLD[i]]][XGOLD[i - 2]] = 1
             observation_space.add(XGOLD[i - 2])
 
+    # this second for loop is for transition parameters
     for i in range(2, len(YGOLD) - 2):
         if (XGOLD[i - 2] in emission_parameter[possible_states[Ytrain[i]]]):
             emission_parameter[possible_states[Ytrain[i]]][XGOLD[i - 2]] -= 1
@@ -123,7 +162,9 @@ def update_parameters(XGOLD, YGOLD, Ytrain):
         else:
             emission_parameter[possible_states[Ytrain[i]]][XGOLD[i - 2]] = -1
             observation_space.add(XGOLD[i - 2])
-
+    for i in range(2, len(YGOLD)):
+        transmission_parameter[possible_states[YGOLD[i - 2]]][possible_states[YGOLD[i - 1]]][possible_states[YGOLD[i]]] += 1                    
+        transmission_parameter[possible_states[Ytrain[i - 2]]][possible_states[Ytrain[i - 1]]][possible_states[Ytrain[i]]] -= 1
 
 
 def train(language):

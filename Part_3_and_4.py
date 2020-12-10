@@ -31,10 +31,8 @@ def new_maximum_likelihood_estimator(f,k=0.5):
 
 from Eval.evalResult import get_observed, get_predicted,compare_observed_to_predicted
 
-def transition_estimator(f):
+def y_counter(f):
     ycount = {"START" : 0}
-    transition_y_count = {}
-    transition_probability = {}
     previous_state = ""
     counter = 0
     for line in f:
@@ -42,10 +40,6 @@ def transition_estimator(f):
         if previous_state == "":
             if len(line.split(" ")) > 1:
                 y = line.split(" ")[1]
-                if tuple(("START", y)) in transition_y_count:
-                    transition_y_count[tuple(("START", y))] += 1
-                else:
-                    transition_y_count[tuple(("START", y))] = 1
                 if y in ycount:
                     ycount[y] +=1
                     ycount["START"] +=1
@@ -57,33 +51,18 @@ def transition_estimator(f):
         else:
             if len(line.split(" ")) > 1:
                 y = line.split(" ")[1] 
-                if tuple((previous_state, y)) in transition_y_count:
-                    transition_y_count[tuple((previous_state, y))] += 1
-                else:
-                    transition_y_count[tuple((previous_state, y))] = 1
                 if y in ycount:
                     ycount[y] +=1
                 else:
                     ycount[y] = 1
                 previous_state = y
-            else:
-                if tuple((previous_state, "STOP")) in transition_y_count:
-                    transition_y_count[tuple((previous_state, "STOP"))] += 1
-                else:
-                    transition_y_count[tuple((previous_state, "STOP"))] = 1
-                
-
-                previous_state = ""
-        
-    for key in transition_y_count.keys():
-        transition_probability[key] = transition_y_count[key]/ycount[key[0]]
     return ycount
 
 states = 0
 def train(language):
     global states
     FILE = training_set(language)
-    ycount = transition_estimator(FILE)
+    ycount = y_counter(FILE)
     states = list(ycount.keys())
     
     emission_counter = tuple([{} for i in range(len(states))])
@@ -191,7 +170,7 @@ def forwardDP(prev_layer, x, language, k,num_of_states):
 def viterbiAlgo(X, language, num_of_states):
 
     n = len(X)
-    Y = []
+    Final_sequence = []
     prev_layer = []
     x = X[0]
     for j in range(1, num_of_states):
@@ -220,11 +199,8 @@ def viterbiAlgo(X, language, num_of_states):
     parent = 0 
     for i in range(n+1, 1, -1):
         parent = layers[i][parent][1]
-        if language == "EN":
-            Y.insert(0, states[parent + 1])
-        else:
-            Y.insert(0, states[parent + 1])
-    return Y
+        Final_sequence.insert(0, states[parent + 1])
+    return Final_sequence
 
 
 #for Part 4
@@ -320,7 +296,7 @@ part = 4
 
 for language in ["EN","CN","SG"]:
 
-    print ("Doing " + language)
+    print ("\n...Running part {} on ".format(part) + language+ "...")
     observation_space, emission_parameter, transmission_parameter, count = train(language)
 
     if part == 3:
@@ -332,5 +308,5 @@ for language in ["EN","CN","SG"]:
 
 
     #results
-    print("\n#results for " + language)
+    print("#results for " + language)
     compare_observed_to_predicted(get_observed(dev_out(language)),get_predicted(output))
