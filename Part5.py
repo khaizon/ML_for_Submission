@@ -1,8 +1,9 @@
 import numpy as np
 import unicodedata
 import sys
-from data_sets import challenge_set,training_set,dev_in
+from data_sets import challenge_set,training_set,dev_in,dev_out
 import time, datetime
+from Eval.evalResult import get_observed, get_predicted,compare_observed_to_predicted
 
 def y_counter(f):
     ycount = {"START" : 0}
@@ -51,7 +52,7 @@ observation_space = set()
 
 transmission_parameter = np.zeros((len(list_of_states), len(list_of_states), len(list_of_states)))
 
-iterations = 30
+iterations = 5
 
 def forward(preScore, x):
 
@@ -197,17 +198,12 @@ def train(language):
 
                 Ygold = ['START1', 'START2']
                 Sentence = []
-    t_params = open(language+'/dev.p5.t_param', 'w', encoding='utf-8')
-    t_params.write(str(transmission_parameter))
-    e_params = open(language+'/dev.p5.e_param', 'w', encoding='utf-8')
-    e_params.write(str(emission_parameter))
-
 
 def perception_algo(language):
     input_file = challenge_set("EN")
     out_file = open(language+'/dev.test.out', 'w', encoding='utf-8')
-    input_file = dev_in("EN")
-    out_file = open(language+'/dev.p5.out', 'w', encoding='utf-8')
+    # input_file = dev_in("EN")
+    # out_file = open(language+'/dev.p5.out', 'w', encoding='utf-8')
     Sentence = []
     for line in input_file:
         line = line.strip()
@@ -220,8 +216,10 @@ def perception_algo(language):
         else:
 
             Sentence.append(line)
-
+    return out_file
 
 for language in ['EN']:
-    train(language)
-    perception_algo(language)
+    # train(language)
+    # perception_algo(language)
+    out_file = open(language+'/dev.amrish.p5.out', 'r', encoding='utf-8')
+    compare_observed_to_predicted(get_observed(dev_out(language)),get_predicted(out_file))
